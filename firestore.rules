@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function deviceId() { return request.auth.token.deviceId; }
+    function ownerUid() { return request.auth.token.ownerUid; }
+    function groupId() { return request.auth.token.groupId; }
+    function activeDevice(group) {
+      return signedIn()
+        && groupId() == group
+        && deviceId() is string
+        && ownerUid() is string
+        && exists(/databases/$(database)/documents/groups/$(group)/devices/$(deviceId()))
+        && get(/databases/$(database)/documents/groups/$(group)/devices/$(deviceId())).data.active == true
+        && get(/databases/$(database)/documents/groups/$(group)/devices/$(deviceId())).data.ownerUid == ownerUid()
+        && get(/databases/$(database)/documents/groups/$(group)/devices/$(deviceId())).data.authUid == request.auth.uid;
+    }
+    function validTransaction() {
+      return request.resource.data.keys().hasOnly([
+          'direction', 'amountMinor', 'currency', 'category', 'description', 'happenedAt',
+          'senderRecipient', 'reference', 'note', 'source', 'pending', 'ownerUid',
+          'createdByDeviceId', 'updatedAt', 'deletedAt'
+        ])
+        && request.resource.data.direction in ['SENT', 'RECEIVED', 'PENDING']
+        && request.resource.data.amountMinor is number
+        && request.resource.data.amountMinor >= 0
+        && request.resource.data.currency == 'PKR'
+        && request.resource.data.category is string
+        && request.resource.data.description is string
+        && request.resource.data.happenedAt is number
+        && request.resource.data.pending is bool
+        && request.resource.data.ownerUid == ownerUid()
+        && request.resource.data.createdByDeviceId == deviceId();
+    }
+    match /users/{uid} { allow read, write: if false; }
+    match /usernames/{name} { allow read, write: if false; }
+    match /pairingCodes/{code} { allow read, write: if false; }
+    match /system/{document} { allow read, write: if false; }
+    match /abuseLimits/{document} { allow read, write: if false; }
+    match /groups/{group}/devices/{device} { allow read, write: if false; }
+    match /groups/{group}/transactions/{transaction} {
+      allow read: if activeDevice(group);
+      allow create, update: if activeDevice(group) && validTransaction();
+      allow delete: if activeDevice(group);
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

@@ -1,0 +1,27 @@
+# TODO
+
+- [ ] Username/password registration and sign-in with required recovery email
+  - Register and sign in using a username and password.
+  - Require a recovery email during registration and use it for account recovery.
+  - Keep credentials and recovery details out of public Firestore reads.
+  - Require authentication for personal data and expose account errors clearly.
+- [ ] First-account Admin assignment and protected admin operations
+  - The first registered account must become Admin through trusted backend logic, never a client-side flag.
+  - Only Admin may generate one-time pairing codes, link devices, and remove linked devices.
+  - Pairing codes must be expiring, single-use, and validated by trusted backend code.
+  - Revoked devices must no longer read or write shared data or receive push alerts.
+- [ ] Cross-device Firestore sync
+  - Synchronize transactions in real time across authenticated, linked devices.
+  - Preserve existing Android local data and work offline; sync offline changes after reconnection.
+  - Represent conflicts deterministically and avoid overwriting newer data silently.
+  - Scope every read/write to the authenticated user/group and enforce with Firestore Security Rules.
+- [ ] FCM/web push and iOS Home Screen support
+  - Send tracker push notifications using trusted server-side FCM logic, including supported PWA clients.
+  - Provide an installable PWA and support iOS/iPadOS Home Screen web push where the platform supports it.
+  - Request notification permission only after an explicit user action.
+  - Do not request notification-reading access or attempt bank/wallet notification import in the PWA; Android remains the notification-import client.
+- [ ] Current Android app refinements
+  - Keep existing local Room behavior and transaction review flow.
+  - Display exact bank transaction date and time, retain independent alerts, system theme, requested categories, and Pending workflow.
+  - Show the single About line “Owner/Creator: Umar Rasheed.”
+  - Use the generated custom launcher icon.
